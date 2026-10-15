@@ -1,4 +1,4 @@
-﻿# CPU Process and Task Scheduling Simulator
+# CPU Process and Task Scheduling Simulator
 
 A terminal based C++17 project for exploring how operating systems schedule processes. The planned application will accept process IDs (PIDs), arrival times, burst times, and priorities; run FCFS, Round Robin, and Priority Scheduling; and report execution order and scheduling metrics. A separate DSA Lab will demonstrate the required data structures and algorithms that do not naturally belong inside the scheduler.
 
@@ -218,5 +218,3 @@ The supplied workspace currently contains no project source files. This document
 - [ ] Sequential file operations work for normal and error cases.
 - [ ] Build and run instructions match the actual project structure.
 - [ ] Tests and final demonstration completed; outcomes documented accurately.
-
-
