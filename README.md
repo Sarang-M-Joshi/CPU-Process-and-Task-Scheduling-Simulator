@@ -1,2 +1,2 @@
 # CPU-Process-and-Task-Scheduling-Simulator
-An operating-system scheduler manages processes with different arrival times, execution durations, and priorities.
+A C++ DSA mini-project simulating FCFS, Round Robin, and Priority CPU scheduling algorithms.
