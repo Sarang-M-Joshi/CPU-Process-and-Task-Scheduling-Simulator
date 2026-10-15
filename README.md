@@ -1,5 +1,4 @@
 # CPU-Process-and-Task-Scheduling-Simulator
-# CPU Process and Task Scheduling Simulator
 
 ## Overview
 
