@@ -218,3 +218,62 @@ The supplied workspace currently contains no project source files. This document
 - [ ] Sequential file operations work for normal and error cases.
 - [ ] Build and run instructions match the actual project structure.
 - [ ] Tests and final demonstration completed; outcomes documented accurately.
+
+---
+
+# CPU Process and Task Scheduling Simulator
+
+Day 1 provides a runnable C++17 console application for process records and core data structure practice. Scheduling algorithms are planned for later days and are not implemented yet.
+
+## Day 1 features
+
+- Process management: add, display, search, update, and delete processes. PIDs are unique in the current collection; arrival times must be non-negative and burst times positive.
+- Singly and doubly linked integer lists with indexed insertion/deletion, search, update, traversal, reverse, emptiness, and size operations.
+- Fixed-capacity array stack and circular queue, plus linked-list stack and queue.
+- A looping main menu and submenus with invalid-number recovery and end-of-file handling.
+- Copy-safe linked lists (deep copy) and non-copyable owning stack/queue types. The array structures report capacity overflow without changing contents.
+
+The linked stack and queue have no configured capacity, so `isFull()` returns false; allocation exhaustion is reported by C++ as `std::bad_alloc`. The console entry point catches that exception and exits with an error. The array structures use fixed-size dynamically allocated arrays at the requested capacity; no `std::stack` or `std::queue` is used. `dsa/Maybe.h` supplies an optional-style return value for empty pop/dequeue/search results, including compatibility with the older GCC standard library available in the development environment.
+
+## Directory structure
+
+```text
+main.cpp
+models/Process.h
+dsa/SLL.h
+dsa/DLL.h
+dsa/StackArray.h
+dsa/StackLinked.h
+dsa/QueueArray.h
+dsa/QueueLinked.h
+ui/Menu.h
+tests/structures_tests.cpp
+```
+
+## Build and run
+
+Prerequisite: a C++17 compiler. From the project root with GCC/MinGW:
+
+```sh
+g++ -std=c++17 -Wall -Wextra -Wpedantic main.cpp -o cpu_scheduler
+./cpu_scheduler
+```
+
+On Windows, run `./cpu_scheduler.exe` (or `cpu_scheduler.exe` in Command Prompt). The default array stack and circular queue capacity is 100.
+
+The main menu opens process management, either linked list, either stack, or either queue. Linked-list indices are zero-based. Stack displays run top to bottom; queue displays run front to rear.
+
+## Verification
+
+The focused assertion-based checks cover list edge cases and copy behavior, stack overflow/underflow and LIFO order, queue FIFO order and circular wraparound, plus empty-to-nonempty transitions. Build and run them with:
+
+```sh
+g++ -std=c++17 -Wall -Wextra -Wpedantic tests/structures_tests.cpp -o structures_tests
+./structures_tests
+```
+
+Verified with MinGW GCC 6.3.0: the application and test executable compiled with `-std=c++17 -Wall -Wextra -Wpedantic` and no warnings. The assertion checks passed. Interactive smoke checks passed for duplicate PID and invalid process values, process search/update/delete, nonnumeric input recovery, and EOF exit.
+
+## Day 2 plan
+
+Planned additions are searching, sorting, hashing, and sequential file handling. FCFS, Round Robin, non-preemptive priority scheduling, Gantt charts, metrics, event logs, and replay remain future work. The shared process record is ready for scheduling modules.
