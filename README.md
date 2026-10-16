@@ -1,12 +1,16 @@
 # DOOMSDAY // TEMPORAL CORE
 
-CPU Process & Task Scheduling Simulator
+---
 
-"Every process has a timeline. Every decision changes the outcome."
+**CPU Process & Task Scheduling Simulator**
+
+> "Every process has a timeline. Every decision changes the outcome."
 
 A terminal based C++17 project for exploring how operating systems schedule processes. The planned application will accept process IDs (PIDs), arrival times, burst times, and priorities; run FCFS, Round Robin, and Priority Scheduling; and report execution order and scheduling metrics. Its proposed terminal presentation is a temporal command center for monitoring actual process execution. A separate DSA Lab will demonstrate the required data structures and algorithms that do not naturally belong inside the scheduler.
 
 This README is the project overview and five day development plan. The architecture and features below are proposed. They are not claims that the application has been implemented.
+
+---
 
 ## 1. Project Objectives
 
@@ -16,6 +20,8 @@ This README is the project overview and five day development plan. The architect
 - Compare policies against independent copies of the same workload.
 - Demonstrate required DSA operations in a DSA Lab, integrating a structure into scheduling only where it is a natural fit.
 - Practice modular development, testing, file handling, and team integration within a five day target schedule.
+
+---
 
 ## 2. Planned Features
 
@@ -42,6 +48,8 @@ flowchart TD
     C --> A
     H --> A
 ```
+
+---
 
 ## Proposed Terminal UI Theme
 
@@ -203,6 +211,8 @@ Present process results with aligned columns for Completion Time (CT), Turnaroun
 
 Reusable UI helpers may render the banner, headings, menus, status indicators, process tables, ready queue, Gantt chart, timestamped event log, results, and comparisons. Keep rendering separate from scheduling-policy logic where practical: the simulation engine produces events and results, while the UI renders live execution or replay. Use C++17-compatible terminal output and no unnecessary dependencies.
 
+---
+
 ## 3. Mandatory DSA Coverage
 
 The DSA Lab is intended to make each required operation demonstrable from the terminal. A data structure should only be described as part of the scheduler when the implementation actually uses it there.
@@ -220,6 +230,8 @@ The DSA Lab is intended to make each required operation demonstrable from the te
 
 For fixed-capacity array structures, operations must report full or empty conditions safely. Define duplicate PID behavior and file record format during implementation.
 
+---
+
 ## 4. Scheduling Algorithms and Rules
 
 The initial design uses the following assumptions:
@@ -233,6 +245,8 @@ The initial design uses the following assumptions:
 - Policy comparisons give each algorithm an independent copy of the same input workload so one run cannot affect another.
 
 A scheduling result should include the execution sequence and per-process completion, turnaround, and waiting times. For Round Robin, the sequence should preserve each run segment, including repeated appearances of the same PID. Define and document behavior for invalid process data, duplicate PIDs, and an invalid time quantum as part of implementation.
+
+---
 
 ## 5. Performance Metrics
 
@@ -250,6 +264,8 @@ For a workload with `n` processes:
 - **Throughput:** `Number of Completed Processes / Total Elapsed Simulation Time`.
 
 CPU utilization and throughput need a defined measurement interval. The initial proposal is from simulation start (time zero) to the final completion, including CPU idle time. Handle zero processes or zero elapsed time without division by zero; report the metric as not applicable or define another explicit convention. Use the same interval for every policy in a comparison.
+
+---
 
 ## 6. Proposed Architecture
 
@@ -271,6 +287,8 @@ This directory layout is a target for organizing the implementation, not a list 
 
 Keep policy logic independent of terminal rendering where practical. The simulation can produce timestamped events and results; the UI can render them live or replay them using the proposed temporal command-center presentation. File formats and module interfaces should be agreed on before parallel implementation.
 
+---
+
 ## 7. Five-Day Development Roadmap
 
 These are targets for a five day project, not completed milestones.
@@ -282,6 +300,8 @@ These are targets for a five day project, not completed milestones.
 | **3** | Implement FCFS, Round Robin, Priority Scheduling, metrics, and tie-breaking rules. | Deterministic scheduling results for agreed workloads, including idle gaps and process metrics. |
 | **4** | Implement live terminal animation, Gantt charts, policy comparison, timestamped event logging, and basic event replay. | Demonstrable temporal command-center simulation view and replay of recorded events; animation independent of simulated time. |
 | **5** | Integrate modules, test every DSA requirement, validate scheduling calculations, fix bugs, and prepare documentation and the final demonstration. | Integrated application, completed checks, corrected issues, and demonstration materials. |
+
+---
 
 ## 8. Prerequisites and Compilation
 
@@ -295,6 +315,8 @@ g++ -std=c++17 -Wall -Wextra -pedantic main.cpp -o scheduler_simulator
 
 For a modular implementation, compile and link the actual `.cpp` files or add a build configuration after the team settles the file layout. Do not copy the example command unchanged if the project uses multiple source files or a different entry point.
 
+---
+
 ## 9. How to Run
 
 Once an executable has been built, run the executable produced by the chosen compiler command. For the illustrative single-file command above:
@@ -304,6 +326,8 @@ Once an executable has been built, run the executable produced by the chosen com
 ```
 
 On Windows, the executable may be named `scheduler_simulator.exe`. The executable name, menu choices, data paths, and run instructions must be updated to match the implementation before release.
+
+---
 
 ## 10. Illustrative Terminal Session
 
@@ -339,6 +363,8 @@ P2    1   3      1      7    6    3
 
 The illustrative values follow the stated Round Robin ordering: P1 runs at times 0-2 and 4-6, then 7-8; P2 runs at 2-4 and 6-7.
 
+---
+
 ## 11. Testing Strategy and Edge Cases
 
 No test results are claimed here. The team should create checks for each required operation and compare scheduling outputs with hand-calculated examples.
@@ -356,6 +382,8 @@ No test results are claimed here. The team should create checks for each require
 - Replay must display saved events without invoking the scheduler again; comparison screens must show calculated metrics.
 - The terminal must remain usable when colors or optional symbols are unsupported.
 
+---
+
 ## 12. Team Responsibilities and Integration Workflow
 
 Assign these responsibilities to group members according to team size; no individual contributors are specified here.
@@ -369,9 +397,13 @@ Assign these responsibilities to group members according to team size; no indivi
 
 Agree on shared models, function interfaces, file formats, and ownership before coding. Integrate small working pieces daily, keep a shared list of edge cases, and review the final checklist together. With a smaller group, combine roles while preserving clear module ownership.
 
+---
+
 ## 13. Future Enhancements
 
 Possible extensions after the required scope works include preemptive priority scheduling, configurable process workloads loaded from files, additional scheduling policies, richer event filtering, and a build system or automated test runner. Add enhancements only after required operations and calculations have been validated.
+
+---
 
 ## 14. Current Project Status and Completion Checklist
 
@@ -392,9 +424,11 @@ The supplied workspace currently contains no project source files. This document
 
 # DOOMSDAY // TEMPORAL CORE
 
-CPU Process & Task Scheduling Simulator
+**CPU Process & Task Scheduling Simulator**
 
 Day 1 provides a runnable C++17 console application for process records and core data structure practice. Scheduling algorithms are planned for later days and are not implemented yet.
+
+---
 
 ## Day 1 features
 
@@ -407,6 +441,8 @@ Day 1 provides a runnable C++17 console application for process records and core
 The current Day 1 executable uses a simple text menu. The temporal command-center design documented above is a proposed presentation for later UI work; it is not implemented in the current interface.
 
 The linked stack and queue have no configured capacity, so `isFull()` returns false; allocation exhaustion is reported by C++ as `std::bad_alloc`. The console entry point catches that exception and exits with an error. The array structures use fixed-size dynamically allocated arrays at the requested capacity; no `std::stack` or `std::queue` is used. `dsa/Maybe.h` supplies an optional-style return value for empty pop/dequeue/search results, including compatibility with the older GCC standard library available in the development environment.
+
+---
 
 ## Directory structure
 
@@ -423,6 +459,8 @@ ui/Menu.h
 tests/structures_tests.cpp
 ```
 
+---
+
 ## Build and run
 
 Prerequisite: a C++17 compiler. From the project root with GCC/MinGW:
@@ -436,6 +474,8 @@ On Windows, run `./cpu_scheduler.exe` (or `cpu_scheduler.exe` in Command Prompt)
 
 The current main menu opens process management, either linked list, either stack, or either queue. The themed labels above are proposed display names for the planned full application. Linked-list indices are zero-based. Stack displays run top to bottom; queue displays run front to rear.
 
+---
+
 ## Verification
 
 The focused assertion-based checks cover list edge cases and copy behavior, stack overflow/underflow and LIFO order, queue FIFO order and circular wraparound, plus empty-to-nonempty transitions. Build and run them with:
@@ -446,6 +486,8 @@ g++ -std=c++17 -Wall -Wextra -Wpedantic tests/structures_tests.cpp -o structures
 ```
 
 Verified with MinGW GCC 6.3.0: the application and test executable compiled with `-std=c++17 -Wall -Wextra -Wpedantic` and no warnings. The assertion checks passed. Interactive smoke checks passed for duplicate PID and invalid process values, process search/update/delete, nonnumeric input recovery, and EOF exit.
+
+---
 
 ## Day 2 plan
 
