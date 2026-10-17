@@ -274,7 +274,8 @@ This directory layout is a target for organizing the implementation, not a list 
 ```text
 .
 ├── models/       # Process and event definitions
-├── dsa/          # Linked lists, stacks, queues, search, sort, and hash table
+├── dsa/          # Linked lists, stacks, queues, searching, sorting, and hash table
+├── storage/      # Sequential process record file operations
 ├── scheduler/    # FCFS, Round Robin, and Priority Scheduling
 ├── simulation/  # Simulation engine, event logger, and replay engine
 ├── storage/     # Sequential process record file operations
@@ -305,27 +306,43 @@ These are targets for a five day project, not completed milestones.
 
 ## 8. Prerequisites and Compilation
 
-The planned implementation targets a C++17 compiler, for example GCC, Clang, or a recent Microsoft Visual C++ toolchain. Choose one compiler and record its version and exact build command when the source layout is established.
+### Day 2 implementation
 
-The workspace structure has not yet been confirmed, so the following is only an example for a single-file starting point, not a guaranteed project build command:
+The DSA Lab now exposes linear and binary search, bubble/insertion/quick sort, and an open-addressed integer hash table using linear probing. Binary search rejects input that is not in ascending order. Hash insertion rejects duplicates and reports a full table; deletion preserves probe chains with tombstones.
+
+Sequential process records are stored in `process_records.csv` in the current working directory as `PID,arrival,burst,priority`. Append rejects duplicate PIDs and invalid process values. Display and search read records sequentially. Delete reads the file and writes all retained records to `process_records.csv.tmp`; when the deleted PID exists, the old file is renamed to a backup before the completed temporary file is installed, with rollback on installation failure. Malformed records cause reads and mutations to fail without replacing the original file.
+
+The main menu's **DSA Lab** contains the Day 1 structures plus the Day 2 additions. Animation, timestamped event logs, and replay remain future work.
+
+### Day 3 implementation
+
+The **Scheduling Lab** runs FCFS, Round Robin, and non-preemptive priority scheduling against the process list maintained by Process Management. Each policy returns its timeline and per-process completion, turnaround, and waiting times; the report also shows average turnaround/waiting time, CPU utilization, and throughput over the interval from time zero to final completion. Empty workloads have no per-process metrics. Round Robin requires a positive quantum and uses the circular array queue. Arrivals during a slice are queued before the running process is re-enqueued at the boundary.
+
+Tie rules are deterministic: FCFS and Round Robin order simultaneous arrivals by PID; priority scheduling chooses the smallest priority number, then earliest arrival, then lowest PID. Idle gaps appear as `IDLE` timeline segments. Scheduling validates non-negative arrivals, positive bursts, unique PIDs, and supported simulation-time range before running. The **Compare all** option evaluates all three policies against the same unchanged process list.
+
+### Build
+
+The project targets C++17. Build the application from the repository root with:
+
+
 
 ```sh
-g++ -std=c++17 -Wall -Wextra -pedantic main.cpp -o scheduler_simulator
+g++ -std=c++17 -Wall -Wextra -Wpedantic main.cpp scheduler/Scheduler.cpp -o cpu_scheduler
 ```
 
-For a modular implementation, compile and link the actual `.cpp` files or add a build configuration after the team settles the file layout. Do not copy the example command unchanged if the project uses multiple source files or a different entry point.
+
 
 ---
 
 ## 9. How to Run
 
-Once an executable has been built, run the executable produced by the chosen compiler command. For the illustrative single-file command above:
+Once the executable has been built, run it from the repository root:
 
 ```sh
-./scheduler_simulator
+./cpu_scheduler
 ```
 
-On Windows, the executable may be named `scheduler_simulator.exe`. The executable name, menu choices, data paths, and run instructions must be updated to match the implementation before release.
+On Windows, run `cpu_scheduler.exe`.
 
 ---
 
@@ -410,7 +427,7 @@ Possible extensions after the required scope works include preemptive priority s
 The supplied workspace currently contains no project source files. This document describes the proposed project; implementation and test status should be updated as work is completed.
 
 - [ ] Shared process and event models implemented.
-- [ ] Every listed DSA operation implemented and accessible in the DSA Lab.
+- [x] Every listed DSA operation implemented and accessible in the DSA Lab.
 - [ ] Round Robin uses an array based circular queue.
 - [ ] FCFS, Round Robin, and Priority Scheduling follow documented ordering rules.
 - [ ] Metrics, idle intervals, utilization, and throughput are validated.
@@ -472,23 +489,23 @@ g++ -std=c++17 -Wall -Wextra -Wpedantic main.cpp -o cpu_scheduler
 
 On Windows, run `./cpu_scheduler.exe` (or `cpu_scheduler.exe` in Command Prompt). The default array stack and circular queue capacity is 100.
 
-The current main menu opens process management, either linked list, either stack, or either queue. The themed labels above are proposed display names for the planned full application. Linked-list indices are zero-based. Stack displays run top to bottom; queue displays run front to rear.
+The main menu opens Process Management, the DSA Lab, and the Scheduling Lab. The DSA Lab groups linked lists, stacks, queues, searching/sorting, hashing, and sequential file handling. The Scheduling Lab shows a numeric Gantt timeline and process metrics. Linked-list indices are zero-based. Stack displays run top to bottom; queue displays run front to rear.
 
 ---
 
 ## Verification
 
-The focused assertion-based checks cover list edge cases and copy behavior, stack overflow/underflow and LIFO order, queue FIFO order and circular wraparound, plus empty-to-nonempty transitions. Build and run them with:
+The assertion-based checks cover the Day 1 structures and manually calculated Day 3 workloads, including FCFS metrics, Round Robin boundary arrivals, priority tie-breaking, idle time, duplicate PIDs, and invalid quantum. Build and run them with:
 
 ```sh
-g++ -std=c++17 -Wall -Wextra -Wpedantic tests/structures_tests.cpp -o structures_tests
+g++ -std=c++17 -Wall -Wextra -Wpedantic tests/structures_tests.cpp scheduler/Scheduler.cpp -o structures_tests
 ./structures_tests
 ```
 
-Verified with MinGW GCC 6.3.0: the application and test executable compiled with `-std=c++17 -Wall -Wextra -Wpedantic` and no warnings. The assertion checks passed. Interactive smoke checks passed for duplicate PID and invalid process values, process search/update/delete, nonnumeric input recovery, and EOF exit.
+Verified with MinGW GCC 6.3.0: the application and test executable compiled with `-std=c++17 -Wall -Wextra -Wpedantic` and no warnings. The assertion checks passed, including the Day 3 scheduling cases.
 
 ---
 
-## Day 2 plan
+## Day 2 and Day 3 status
 
-Planned additions are searching, sorting, hashing, and sequential file handling. FCFS, Round Robin, non-preemptive priority scheduling, Gantt charts, metrics, event logs, and replay remain future work. The shared process record is ready for scheduling modules.
+Day 2 DSA and sequential file operations and Day 3 scheduling policies and metrics are implemented. Live animation, timestamped event logs, and replay remain planned Day 4 work.

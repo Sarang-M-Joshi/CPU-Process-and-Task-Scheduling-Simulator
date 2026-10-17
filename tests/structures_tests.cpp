@@ -4,6 +4,7 @@
 #include "../dsa/SLL.h"
 #include "../dsa/StackArray.h"
 #include "../dsa/StackLinked.h"
+#include "../scheduler/Scheduler.h"
 
 #include <cassert>
 #include <iostream>
@@ -46,5 +47,28 @@ int main() {
         dsa::QueueLinked linked; assert(!linked.dequeue()); linked.enqueue(7); assert(linked.front() == 7);
         assert(linked.dequeue() == 7 && linked.isEmpty()); linked.enqueue(8); assert(linked.dequeue() == 8 && !linked.isFull());
     }
-    std::cout << "All Day 1 structure checks passed.\n";
+    {
+        const std::vector<scheduler::Process> workload{{1, 0, 5, 2}, {2, 1, 3, 1}};
+        const auto fcfs = scheduler::Scheduler::fcfs(workload);
+        assert(fcfs.valid && fcfs.metrics.size() == 2);
+        assert(fcfs.metrics[0].completionTime == 5 && fcfs.metrics[0].turnaroundTime == 5 && fcfs.metrics[0].waitingTime == 0);
+        assert(fcfs.metrics[1].completionTime == 8 && fcfs.metrics[1].turnaroundTime == 7 && fcfs.metrics[1].waitingTime == 4);
+        const auto rr = scheduler::Scheduler::roundRobin(workload, 2);
+        assert(rr.valid && rr.timeline.size() == 5);
+        assert(rr.metrics[0].completionTime == 8 && rr.metrics[0].turnaroundTime == 8 && rr.metrics[0].waitingTime == 3);
+        assert(rr.metrics[1].completionTime == 7 && rr.metrics[1].turnaroundTime == 6 && rr.metrics[1].waitingTime == 3);
+        assert(rr.averageWaiting == 3.0 && rr.averageTurnaround == 7.0 && rr.cpuUtilization == 100.0);
+        const auto priority = scheduler::Scheduler::priority(workload);
+        assert(priority.valid && priority.metrics[0].completionTime == 5 && priority.metrics[1].completionTime == 8);
+        const auto idle = scheduler::Scheduler::fcfs({{9, 3, 2, 0}});
+        assert(idle.valid && idle.timeline.size() == 2 && idle.timeline[0].idle && idle.elapsedTime == 5);
+        const auto priorityTie = scheduler::Scheduler::priority({{3, 0, 2, 2}, {8, 0, 1, 1}, {5, 0, 1, 1}});
+        assert(priorityTie.valid && priorityTie.timeline[0].pid == 5 && priorityTie.timeline[1].pid == 8 && priorityTie.timeline[2].pid == 3);
+        const auto boundaryArrival = scheduler::Scheduler::roundRobin({{1, 0, 4, 0}, {2, 2, 1, 0}}, 2);
+        assert(boundaryArrival.valid && boundaryArrival.timeline.size() == 3);
+        assert(boundaryArrival.timeline[0].pid == 1 && boundaryArrival.timeline[1].pid == 2 && boundaryArrival.timeline[2].pid == 1);
+        assert(!scheduler::Scheduler::roundRobin(workload, 0).valid);
+        assert(!scheduler::Scheduler::fcfs({{1, 0, 1, 0}, {1, 2, 1, 0}}).valid);
+    }
+    std::cout << "Day 1 structures and Day 3 scheduling checks passed.\n";
 }
