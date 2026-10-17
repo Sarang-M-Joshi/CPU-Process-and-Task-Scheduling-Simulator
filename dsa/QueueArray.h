@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <iostream>
 #include <memory>
+#include <vector>
 
 namespace dsa {
 
@@ -23,6 +24,12 @@ public:
     bool isEmpty() const noexcept { return count_ == 0; }
     bool isFull() const noexcept { return count_ == capacity_; }
     std::size_t size() const noexcept { return count_; }
+    std::vector<int> values() const {
+        std::vector<int> out;
+        out.reserve(count_);
+        for (std::size_t i = 0; i < count_; ++i) out.push_back(data_[(front_ + i) % capacity_]);
+        return out;
+    }
 };
 
 }  // namespace dsa
