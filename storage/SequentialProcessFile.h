@@ -40,6 +40,7 @@ public:
     const std::string& path() const { return path_; }
     bool display(std::vector<scheduler::Process>& records) const { records.clear(); return readAll(records); }
     bool append(const scheduler::Process& p) {
+        if (p.arrivalTime < 0 || p.burstTime <= 0) return false;
         std::vector<scheduler::Process> records; if (!readAll(records)) return false;
         for (const auto& old : records) if (old.pid == p.pid) return false;
         std::ofstream out(path_, std::ios::app); if (!out) return false; write(out, p); out.flush(); return static_cast<bool>(out);

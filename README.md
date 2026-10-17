@@ -6,9 +6,9 @@
 
 > "Every process has a timeline. Every decision changes the outcome."
 
-A terminal based C++17 project for exploring how operating systems schedule processes. The planned application will accept process IDs (PIDs), arrival times, burst times, and priorities; run FCFS, Round Robin, and Priority Scheduling; and report execution order and scheduling metrics. Its proposed terminal presentation is a temporal command center for monitoring actual process execution. A separate DSA Lab will demonstrate the required data structures and algorithms that do not naturally belong inside the scheduler.
+A C++17 CPU scheduling simulator presented under the identity `DOOMSDAY // TEMPORAL CORE`. Its terminal UI is a futuristic temporal command center for monitoring actual process execution. The application accepts process IDs (PIDs), arrival times, burst times, and priorities; runs FCFS, Round Robin, and Priority Scheduling; and reports execution order and scheduling metrics. A separate DSA Lab demonstrates the required data structures and algorithms that do not naturally belong inside the scheduler.
 
-This README is the project overview and five day development plan. The architecture and features below are proposed. They are not claims that the application has been implemented.
+This README contains the project overview, design conventions, five day development plan, and implementation notes. Current project status is summarized at the end.
 
 ---
 
@@ -28,7 +28,7 @@ This README is the project overview and five day development plan. The architect
 - **Process management:** add, display, search, update, and delete process records.
 - **Scheduling Lab:** run FCFS, Round Robin, or Priority Scheduling on a workload.
 - **Round Robin queue:** use an array based circular queue for ready processes.
-- **Live terminal view:** show simulated time, running process, ready queue, process states, and a growing ASCII Gantt chart in the proposed temporal command-center presentation. Animation delay is only for display; it does not advance simulated time.
+- **Live terminal view:** show simulated time, running process, scheduler-captured ready queue and process states, and a growing ASCII Gantt chart in the temporal command-center presentation. Animation delay is only for display; it does not advance simulated time.
 - **Event log and replay:** record timestamped arrivals, dispatches, preemptions, and completions, then replay saved events without running the scheduler again.
 - **Policy comparison:** run each policy on an independent copy of the same workload and compare the resulting metrics.
 - **DSA Lab:** exercise required structures and algorithms that are not required by the scheduler.
@@ -51,31 +51,44 @@ flowchart TD
 
 ---
 
-## Proposed Terminal UI Theme
+## DOOMSDAY Terminal UI Theme
 
-The proposed terminal presentation is a dark temporal command center monitoring real process execution across a timeline, with Doom-green energy accents and metallic grey framing. `DOOMSDAY // TEMPORAL CORE` is a visual identity for this CPU scheduling project; it adds no fictional behavior or scheduling rules. The examples below are design mockups, not evidence that this interface has been implemented. The final demonstration may introduce the project as `DOOMSDAY // TEMPORAL CORE - CPU Process & Task Scheduling Simulator` and explain the actual operating-system scheduling concepts accurately.
+The terminal presentation is a futuristic temporal command center monitoring real process execution across a timeline. `DOOMSDAY // TEMPORAL CORE` is the visual identity for this CPU scheduling project; it adds no fictional behavior or scheduling rules. The examples below are illustrative. The final demonstration may introduce the project as `DOOMSDAY // TEMPORAL CORE - CPU Process & Task Scheduling Simulator` and explain the actual operating-system scheduling concepts accurately.
 
 ### Visual and terminal conventions
 
 Use compact tables, consistent separators, angular ASCII borders, and restrained decoration. Keep process IDs, times, queue contents, DSA operations, and metrics readable.
 
-| Display color | Proposed use |
+| Display color | Use |
 |---|---|
-| Dark charcoal/black | Background |
-| Doom green | Headings, active selection, running process, timeline accents |
-| Cyan | Simulated timestamps, ready queue, numerical system data |
-| Amber/yellow | Newly arrived processes, pending dispatch, timeline alerts |
+| Terminal background | Respect the operator's configured dark terminal theme; do not require a forced background color |
+| Green | DOOMSDAY identity, active processes, selected options, successful operations |
+| Blue/cyan | Simulated timestamps, system information, timeline markers, ready queue |
+| Yellow | Warnings, arriving processes, time-quantum expiration, important transitions |
 | Grey | Completed processes and secondary information |
 | White/light grey | Main text and table contents |
 | Red | Errors, invalid input, critical system alerts |
 
-For process states, green means running, cyan means ready, yellow means newly arrived or awaiting dispatch, grey means completed, and red means invalid data or an error. Use only states already produced by the scheduler; color is presentation and never affects scheduling decisions. Show concise system messages such as `NEW PROCESS DETECTED`, `PROCESS DISPATCHED`, `PROCESS PREEMPTED`, `TIME QUANTUM EXHAUSTED`, `EXECUTION COMPLETE`, and `CPU IDLE // WAITING FOR NEXT ARRIVAL` only when their corresponding events occur. When work remains and the ready queue is empty, label the interval `TIMELINE GAP // CPU IDLE` and show it in the Gantt chart according to the existing simulated-time rules.
+For process states, green means running, cyan means ready, yellow means newly arrived or awaiting dispatch, grey means completed, and red means invalid data or an error. Use only states already produced by the scheduler; color is presentation and never affects scheduling decisions. Show concise system messages such as `NEW PROCESS DETECTED`, `PROCESS DISPATCHED`, `PROCESS PREEMPTED`, `TIME QUANTUM EXHAUSTED`, `EXECUTION COMPLETE`, and `CPU IDLE // WAITING FOR NEXT ARRIVAL` only when their corresponding real events occur. When work remains and the ready queue is empty, label the interval `TIMELINE GAP // CPU IDLE` and show it in the Gantt chart according to the existing simulated-time rules. Boot checks and loading messages must be clearly marked as presentation-only initialization; they must not imply hardware, scheduler, or workload checks that did not run.
 
-Use ANSI colors only when supported, with a plain-text fallback where practical. Prefer ASCII borders; Unicode symbols are optional. Screen clearing and animation must account for terminal support. Do not add a graphics library or UI framework solely for this theme. Display animation delay remains independent of simulated time.
+Use ANSI colors and cursor positioning only when supported; provide a readable plain-text fallback for limited terminals. Prefer ASCII borders; Unicode symbols are optional. C++17 facilities such as `<chrono>`, `<thread>`, ANSI escape sequences, and cursor positioning are sufficient. Do not add a graphics library or UI framework solely for this theme.
+
+### Animated terminal behavior
+
+The terminal renders actual application events and results with these behaviors. They do not add scheduling rules.
+
+1. **Boot sequence:** reveal the application title, show visual interface-readiness messages, and animate a short loading bar before the main menu. Label these messages as presentation-only; do not report system checks that have not actually run.
+2. **Menu reveal:** reveal menu sections progressively, then highlight the operator's selected option using the green identity color.
+3. **Live scheduling:** grow the ASCII Gantt chart as actual execution segments occur. Use the palette to highlight recorded arrivals, dispatches, preemptions, completions, and idle intervals.
+4. **Process transitions:** briefly highlight a process when its scheduler-produced state changes. Use green for running, cyan for ready, yellow for arrivals and important transitions, and grey for completed processes.
+5. **Timeline replay:** progressively render saved events without invoking the scheduling policy. Provide feasible pause, resume, and playback-speed controls; replay must preserve the recorded event order and timestamps.
+6. **Results presentation:** reveal the execution report in readable stages, followed by per-process and aggregate metrics, rather than dumping an unformatted block.
+
+Provide configurable animation speed and an option to skip or minimize animation. In plain-text mode, show the same actual events, segments, and metrics without color or cursor effects. Display delays and playback controls affect rendering only; they must never change simulated CPU time, arrivals, queue ordering, scheduling decisions, execution segments, calculated metrics, event timestamps, or replay semantics.
 
 ### Command-center main menu
 
-These menu labels map to the existing planned features; they do not add modules or change application flow.
+These main-menu labels map to existing features; they do not add modules or change application flow.
 
 | Display label | Existing feature |
 |---|---|
@@ -84,6 +97,7 @@ These menu labels map to the existing planned features; they do not add modules 
 | DSA Training Chamber | DSA Lab |
 | Timeline Archives | Saved Simulations, Event Logs, and Replay |
 | Multiverse Comparison | Scheduling Policy Comparison |
+| System Configuration | Animation and color settings |
 | Shut Down Core | Exit |
 
 Illustrative main-menu mockup:
@@ -107,6 +121,8 @@ Illustrative main-menu mockup:
 |       Saved Events and Simulation Replay                 |
 |  [05] Multiverse Comparison                              |
 |       Compare Scheduling Policies                       |
+|  [06] System Configuration                              |
+|       Animation and color settings                     |
 |  [00] Shut Down Core                                     |
 +----------------------------------------------------------+
 |  SYSTEM: Awaiting operator command...                    |
@@ -115,7 +131,7 @@ Illustrative main-menu mockup:
 
 ### Temporal simulation and algorithm panels
 
-The live scheduling screen should show the selected policy, simulated time, current CPU process, ready queue, execution information such as remaining burst time when available, process states, a growing Gantt chart, timestamped event messages, and a clear simulation status. Every Gantt segment must come from an actual execution segment; repeated Round Robin runs of the same PID stay visible.
+The live scheduling screen shows the selected policy, simulated time, current CPU process, scheduler-captured ready queue, remaining burst time, process states, a growing Gantt chart, timestamped event messages, and simulation status. Every Gantt segment and transition message comes from an actual scheduler result or event; repeated Round Robin runs of the same PID stay visible. Presentation-only initialization messages are identified as such.
 
 ```text
 +----------------------------------------------------------+
@@ -133,7 +149,7 @@ The live scheduling screen should show the selected policy, simulated time, curr
 | [T=0] P1 dispatched to CPU                               |
 | [T=2] P1 time slice expired                              |
 | [T=2] P2 dispatched to CPU                               |
-| [T=3] Monitoring current execution...                    |
+| [T=3] P2 is executing // active segment status            |
 +----------------------------------------------------------+
 ```
 
@@ -141,7 +157,7 @@ All values above are illustrative. The existing policy names remain prominent, w
 
 ### Timeline Archives and Multiverse Comparison
 
-The archive presentation may show a run identifier, policy, workload, applicable time quantum, timestamped arrivals/dispatches/preemptions/completions, recorded timeline, final metrics, and replay controls. Replay reconstructs the saved timeline from events without running the scheduling policy again. The theme does not require a new database, persistence format, or storage subsystem.
+The archive shows a run identifier, policy, workload, applicable time quantum, timestamped arrivals/dispatches/preemptions/completions, recorded timeline, final metrics, and replay controls. Replay progressively renders saved events without running the scheduling policy again; step-controlled replay supports pause/resume, exit, and speed adjustment, all of which affect only display. New archive records add metadata and metrics while remaining readable alongside older event-log entries.
 
 ```text
 +----------------------------------------------------------+
@@ -156,7 +172,7 @@ The archive presentation may show a run identifier, policy, workload, applicable
 +----------------------------------------------------------+
 ```
 
-Run IDs, event text, and values here are illustrative. Replay controls render the recorded events only; they do not invoke the scheduling policy again.
+Run IDs, event text, and values here are illustrative. Replay controls render the recorded events only; they do not invoke the scheduling policy again. Replay animation must preserve the recorded order and timestamps.
 
 The comparison panel presents the same workload run on independent copies and displays actual results for the existing policies:
 
@@ -207,9 +223,11 @@ Keep every required DSA operation and preserve the separation between the DSA La
 
 Present process results with aligned columns for Completion Time (CT), Turnaround Time (TAT), and Waiting Time (WT), plus Average Waiting Time, Average Turnaround Time, CPU Utilization, and Throughput. Labels such as `EXECUTION REPORT`, `TIMELINE SUMMARY`, and `CORE PERFORMANCE METRICS` are presentation only; retain the existing formulas and zero-workload conventions.
 
+Present these results in stages with an optional brief delay between sections. Skipping or minimizing the presentation must reveal the same final values.
+
 ### Rendering guidance
 
-Reusable UI helpers may render the banner, headings, menus, status indicators, process tables, ready queue, Gantt chart, timestamped event log, results, and comparisons. Keep rendering separate from scheduling-policy logic where practical: the simulation engine produces events and results, while the UI renders live execution or replay. Use C++17-compatible terminal output and no unnecessary dependencies.
+Reusable UI helpers render the banner, headings, menus, status indicators, process tables, ready queue, Gantt chart, timestamped event log, results, and comparisons. Keep rendering separate from scheduling-policy logic where practical: the simulation engine produces events and state snapshots, while the UI renders live execution or replay. Animation controls and delays operate only on rendering. Use C++17-compatible terminal output and no unnecessary dependencies.
 
 ---
 
@@ -312,7 +330,7 @@ The DSA Lab now exposes linear and binary search, bubble/insertion/quick sort, a
 
 Sequential process records are stored in `process_records.csv` in the current working directory as `PID,arrival,burst,priority`. Append rejects duplicate PIDs and invalid process values. Display and search read records sequentially. Delete reads the file and writes all retained records to `process_records.csv.tmp`; when the deleted PID exists, the old file is renamed to a backup before the completed temporary file is installed, with rollback on installation failure. Malformed records cause reads and mutations to fail without replacing the original file.
 
-The main menu's **DSA Lab** contains the Day 1 structures plus the Day 2 additions. Animation, timestamped event logs, and replay remain future work.
+The main menu's **DSA Training Chamber** contains the Day 1 structures plus the Day 2 additions. Animation settings are available from **System Configuration** and from the scheduling/replay prompts.
 
 ### Day 3 implementation
 
@@ -344,11 +362,13 @@ Once the executable has been built, run it from the repository root:
 
 On Windows, run `cpu_scheduler.exe`.
 
+Animation defaults to **Full**. Open **[06] System Configuration** to choose Full, Reduced, or Off. Set `DOOMSDAY_ANIMATION=off` before launching to skip the boot animation; use `DOOMSDAY_ANIMATION=reduced` for a shorter reveal. ANSI color is detected automatically and can be disabled in System Configuration. In a step-controlled timeline replay, press Enter to resume to the next segment, `+` or `-` to adjust speed, or `q` to exit.
+
 ---
 
 ## 10. Illustrative Terminal Session
 
-The following session is a proposed interaction mockup, not evidence that the themed interface has been implemented. The values are illustrative.
+The following session illustrates an interaction; the workload values are illustrative.
 
 ```text
 DOOMSDAY // TEMPORAL CORE
@@ -431,7 +451,7 @@ The supplied workspace currently contains no project source files. This document
 - [ ] Round Robin uses an array based circular queue.
 - [ ] FCFS, Round Robin, and Priority Scheduling follow documented ordering rules.
 - [ ] Metrics, idle intervals, utilization, and throughput are validated.
-- [ ] Live view, Gantt chart, timestamped logging, and event replay work.
+- [x] Live view, Gantt chart, timestamped logging, and event replay work.
 - [ ] Policy comparison uses independent copies of the same workload.
 - [ ] Sequential file operations work for normal and error cases.
 - [ ] Build and run instructions match the actual project structure.
@@ -455,7 +475,7 @@ Day 1 provides a runnable C++17 console application for process records and core
 - A looping main menu and submenus with invalid-number recovery and end-of-file handling.
 - Copy-safe linked lists (deep copy) and non-copyable owning stack/queue types. The array structures report capacity overflow without changing contents.
 
-The current Day 1 executable uses a simple text menu. The temporal command-center design documented above is a proposed presentation for later UI work; it is not implemented in the current interface.
+The current application uses the DOOMSDAY temporal command-center terminal presentation described above, with a plain-text fallback when ANSI terminal features are unavailable.
 
 The linked stack and queue have no configured capacity, so `isFull()` returns false; allocation exhaustion is reported by C++ as `std::bad_alloc`. The console entry point catches that exception and exits with an error. The array structures use fixed-size dynamically allocated arrays at the requested capacity; no `std::stack` or `std::queue` is used. `dsa/Maybe.h` supplies an optional-style return value for empty pop/dequeue/search results, including compatibility with the older GCC standard library available in the development environment.
 
@@ -489,13 +509,15 @@ g++ -std=c++17 -Wall -Wextra -Wpedantic main.cpp -o cpu_scheduler
 
 On Windows, run `./cpu_scheduler.exe` (or `cpu_scheduler.exe` in Command Prompt). The default array stack and circular queue capacity is 100.
 
-The main menu opens Process Management, the DSA Lab, and the Scheduling Lab. The DSA Lab groups linked lists, stacks, queues, searching/sorting, hashing, and sequential file handling. The Scheduling Lab shows a numeric Gantt timeline and process metrics. Linked-list indices are zero-based. Stack displays run top to bottom; queue displays run front to rear.
+Open **[06] System Configuration** to select Full, Reduced, or Off animation and toggle ANSI color when supported. Set `DOOMSDAY_ANIMATION=off` before launching to skip animation from startup, or `DOOMSDAY_ANIMATION=reduced` for a shorter reveal. ANSI color is detected automatically; `NO_COLOR` or a limited terminal selects plain-text output. Timeline replay offers timed or step-controlled playback. In step mode, press Enter to resume to the next segment, `+` or `-` to change speed, or `q` to exit.
+
+The main menu opens Process Registry, Temporal Simulation, DSA Training Chamber, Timeline Archives, Multiverse Comparison, and System Configuration. The DSA Training Chamber groups linked lists, stacks, queues, searching/sorting, hashing, and sequential file handling. The Scheduling Lab shows a numeric Gantt timeline, actual ready-queue order, process-state snapshots, and process metrics. Linked-list indices are zero-based. Stack displays run top to bottom; queue displays run front to rear.
 
 ---
 
 ## Verification
 
-The assertion-based checks cover the Day 1 structures and manually calculated Day 3 workloads, including FCFS metrics, Round Robin boundary arrivals, priority tie-breaking, idle time, duplicate PIDs, and invalid quantum. Build and run them with:
+The assertion-based checks cover the DSA structures, circular-queue wraparound and snapshots, search/sort/hash operations, sequential-file persistence and malformed records, scheduler metrics, ready-queue/process-state snapshots, events, idle time, deterministic ties, and invalid quantum. Build and run them with:
 
 ```sh
 g++ -std=c++17 -Wall -Wextra -Wpedantic tests/structures_tests.cpp scheduler/Scheduler.cpp -o structures_tests
@@ -504,8 +526,33 @@ g++ -std=c++17 -Wall -Wextra -Wpedantic tests/structures_tests.cpp scheduler/Sch
 
 Verified with MinGW GCC 6.3.0: the application and test executable compiled with `-std=c++17 -Wall -Wextra -Wpedantic` and no warnings. The assertion checks passed, including the Day 3 scheduling cases.
 
+Run `powershell -NoProfile -ExecutionPolicy Bypass -File .\demo.ps1` to build the application and checks, run the sample comparison, test timed and step-controlled event replay, and smoke-check the animation-off plain-text UI and themed DSA menu.
+
 ---
 
 ## Day 2 and Day 3 status
 
-Day 2 DSA and sequential file operations and Day 3 scheduling policies and metrics are implemented. Live animation, timestamped event logs, and replay remain planned Day 4 work.
+Day 2 DSA and sequential file operations and Day 3 scheduling policies and metrics are implemented. Day 4 adds the animated live view, timestamped events, policy comparison, and saved-event replay.
+
+Day 4 objectives are completed.
+
+## Day 4 achievements
+
+- Implemented the themed boot sequence, progressive menus, live scheduling display, process-state transitions, staged results, animation settings, and animated event replay.
+- Recorded timestamped arrival, dispatch, preemption, and completion events; completed runs are saved in `simulation_events.log` and can be replayed.
+- Added a comparison table for FCFS, Round Robin, and priority scheduling metrics.
+
+## Day 5 completion
+
+- Integrated and compiled the C++17 application with warning flags.
+- Expanded checks for linked structures, stacks, queues and circular-queue wraparound, search, sorting, hash collisions, file persistence and malformed records, scheduling metrics, and scheduler events.
+- Added a sample workload, a cleaner terminal menu, and `demo.ps1` to build, run checks, compare policies, and demonstrate event replay.
+
+Day 5 objectives are completed.
+
+## Run the application
+
+```powershell
+g++ -std=c++17 -Wall -Wextra -Wpedantic main.cpp scheduler/Scheduler.cpp -o cpu_scheduler.exe
+.\cpu_scheduler.exe
+```

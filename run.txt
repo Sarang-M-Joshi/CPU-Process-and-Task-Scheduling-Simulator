@@ -1,0 +1,3 @@
+run command : g++ -std=c++17 -Wall -Wextra -Wpedantic main.cpp scheduler/Scheduler.cpp -o cpu_scheduler.exe
+.\cpu_scheduler.exe
+in demo.ps1

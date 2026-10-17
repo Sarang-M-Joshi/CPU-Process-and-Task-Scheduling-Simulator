@@ -6,6 +6,25 @@
 
 namespace scheduler {
 
+namespace {
+std::vector<ProcessSnapshot> captureProcesses(const std::vector<Process>& processes,
+                                               const std::vector<int>& remaining,
+                                               const std::vector<bool>& completed,
+                                               const std::vector<int>& readyPids,
+                                               int runningPid) {
+    std::vector<ProcessSnapshot> snapshot;
+    snapshot.reserve(processes.size());
+    for (std::size_t i = 0; i < processes.size(); ++i) {
+        ProcessState state = ProcessState::New;
+        if (completed[i]) state = ProcessState::Completed;
+        else if (processes[i].pid == runningPid) state = ProcessState::Running;
+        else if (std::find(readyPids.begin(), readyPids.end(), processes[i].pid) != readyPids.end()) state = ProcessState::Ready;
+        snapshot.push_back({processes[i].pid, state, remaining[i]});
+    }
+    return snapshot;
+}
+}  // namespace
+
 bool Scheduler::validate(const std::vector<Process>& processes, std::string& error) {
     std::unordered_set<int> pids;
     long long totalBurst = 0;
@@ -43,6 +62,36 @@ void Scheduler::finish(SchedulingResult& result, const std::vector<Process>& pro
     }
 }
 
+void Scheduler::recordEvents(SchedulingResult& result, const std::vector<Process>& processes) {
+    result.events.clear();
+    for (const auto& p : processes) result.events.push_back({p.arrivalTime, EventType::Arrival, p.pid});
+    for (const auto& segment : result.timeline) {
+        if (segment.idle) continue;
+        result.events.push_back({segment.start, EventType::Dispatch, segment.pid});
+        const auto metric = std::find_if(result.metrics.begin(), result.metrics.end(), [&](const ProcessMetrics& m) {
+            return m.process.pid == segment.pid;
+        });
+        if (metric != result.metrics.end() && metric->completionTime == segment.end)
+            result.events.push_back({segment.end, EventType::Completion, segment.pid});
+        else if (result.policy == Policy::RoundRobin)
+            result.events.push_back({segment.end, EventType::Preemption, segment.pid});
+    }
+    auto rank = [](EventType type) {
+        switch (type) {
+            case EventType::Arrival: return 0;
+            case EventType::Preemption: return 1;
+            case EventType::Completion: return 2;
+            case EventType::Dispatch: return 3;
+        }
+        return 4;
+    };
+    std::stable_sort(result.events.begin(), result.events.end(), [&](const SimulationEvent& a, const SimulationEvent& b) {
+        if (a.timestamp != b.timestamp) return a.timestamp < b.timestamp;
+        if (rank(a.type) != rank(b.type)) return rank(a.type) < rank(b.type);
+        return a.pid < b.pid;
+    });
+}
+
 SchedulingResult Scheduler::fcfs(const std::vector<Process>& processes) {
     SchedulingResult r; r.policy = Policy::FCFS;
     if (!validate(processes, r.error)) { r.valid = false; return r; }
@@ -53,20 +102,35 @@ SchedulingResult Scheduler::fcfs(const std::vector<Process>& processes) {
         return processes[a].pid < processes[b].pid;
     });
     std::vector<int> completion(processes.size(), 0);
+    std::vector<int> remaining(processes.size());
+    std::vector<bool> done(processes.size(), false);
+    for (std::size_t i = 0; i < processes.size(); ++i) remaining[i] = processes[i].burstTime;
     int time = 0;
     for (std::size_t i : order) {
         const Process& p = processes[i];
-        if (time < p.arrivalTime) { r.timeline.push_back({time, p.arrivalTime, true, 0}); time = p.arrivalTime; }
+        if (time < p.arrivalTime) {
+            r.timeline.push_back({time, p.arrivalTime, true, 0});
+            r.timeline.back().processes = captureProcesses(processes, remaining, done, {}, 0);
+            time = p.arrivalTime;
+        }
         const int end = time + p.burstTime;
-        r.timeline.push_back({time, end, false, p.pid}); r.busyTime += p.burstTime; time = end; completion[i] = time;
+        std::vector<int> ready;
+        for (std::size_t j : order) if (j != i && !done[j] && processes[j].arrivalTime <= time) ready.push_back(processes[j].pid);
+        r.timeline.push_back({time, end, false, p.pid});
+        auto& segment = r.timeline.back();
+        segment.remainingBurst = remaining[i];
+        segment.readyQueue = ready;
+        segment.processes = captureProcesses(processes, remaining, done, ready, p.pid);
+        r.busyTime += p.burstTime; time = end; completion[i] = time; remaining[i] = 0; done[i] = true;
     }
-    r.elapsedTime = time; finish(r, processes, completion); return r;
+    r.elapsedTime = time; finish(r, processes, completion); recordEvents(r, processes); return r;
 }
 
 SchedulingResult Scheduler::roundRobin(const std::vector<Process>& processes, int quantum) {
     SchedulingResult r; r.policy = Policy::RoundRobin;
     if (!validate(processes, r.error)) { r.valid = false; return r; }
     if (quantum <= 0) { r.valid = false; r.error = "Round Robin quantum must be positive."; return r; }
+    r.quantum = quantum;
     const std::size_t n = processes.size();
     if (n == 0) return r;
     if (n > static_cast<std::size_t>(std::numeric_limits<int>::max())) { r.valid = false; r.error = "Too many processes for the circular queue."; return r; }
@@ -78,6 +142,7 @@ SchedulingResult Scheduler::roundRobin(const std::vector<Process>& processes, in
     });
     dsa::QueueArray ready(n);
     std::vector<int> remaining(n), completion(n, 0);
+    std::vector<bool> done(n, false);
     for (std::size_t i = 0; i < n; ++i) remaining[i] = processes[i].burstTime;
     std::size_t next = 0, completed = 0;
     int time = 0;
@@ -87,22 +152,31 @@ SchedulingResult Scheduler::roundRobin(const std::vector<Process>& processes, in
         }
         if (ready.isEmpty()) {
             const int nextTime = processes[arrivalOrder[next]].arrivalTime;
-            if (time < nextTime) { r.timeline.push_back({time, nextTime, true, 0}); time = nextTime; }
+            if (time < nextTime) {
+                r.timeline.push_back({time, nextTime, true, 0});
+                r.timeline.back().processes = captureProcesses(processes, remaining, done, {}, 0);
+                time = nextTime;
+            }
             continue;
         }
         const std::size_t i = static_cast<std::size_t>(*ready.dequeue());
         const int duration = std::min(quantum, remaining[i]);
         const int end = time + duration;
         r.timeline.push_back({time, end, false, processes[i].pid});
+        auto& segment = r.timeline.back();
+        const auto queued = ready.values();
+        for (int index : queued) segment.readyQueue.push_back(processes[static_cast<std::size_t>(index)].pid);
+        segment.remainingBurst = remaining[i];
+        segment.processes = captureProcesses(processes, remaining, done, segment.readyQueue, processes[i].pid);
         r.busyTime += duration; remaining[i] -= duration; time = end;
         // Arrivals at the slice boundary enter the queue before the interrupted process.
         while (next < n && processes[arrivalOrder[next]].arrivalTime <= time) {
             ready.enqueue(static_cast<int>(arrivalOrder[next++]));
         }
         if (remaining[i] > 0) ready.enqueue(static_cast<int>(i));
-        else { completion[i] = time; ++completed; }
+        else { completion[i] = time; done[i] = true; ++completed; }
     }
-    r.elapsedTime = time; finish(r, processes, completion); return r;
+    r.elapsedTime = time; finish(r, processes, completion); recordEvents(r, processes); return r;
 }
 
 SchedulingResult Scheduler::priority(const std::vector<Process>& processes) {
@@ -125,15 +199,37 @@ SchedulingResult Scheduler::priority(const std::vector<Process>& processes) {
         if (chosen == n) {
             int nextArrival = std::numeric_limits<int>::max();
             for (std::size_t i = 0; i < n; ++i) if (!done[i]) nextArrival = std::min(nextArrival, processes[i].arrivalTime);
-            if (time < nextArrival) { r.timeline.push_back({time, nextArrival, true, 0}); time = nextArrival; }
+            if (time < nextArrival) {
+                r.timeline.push_back({time, nextArrival, true, 0});
+                std::vector<int> remaining(n);
+                for (std::size_t j = 0; j < n; ++j) remaining[j] = done[j] ? 0 : processes[j].burstTime;
+                r.timeline.back().processes = captureProcesses(processes, remaining, done, {}, 0);
+                time = nextArrival;
+            }
             continue;
         }
         const Process& p = processes[chosen];
         const int end = time + p.burstTime;
-        r.timeline.push_back({time, end, false, p.pid}); r.busyTime += p.burstTime; time = end;
+        std::vector<std::size_t> ranked;
+        for (std::size_t j = 0; j < n; ++j) if (j != chosen && !done[j] && processes[j].arrivalTime <= time) ranked.push_back(j);
+        std::sort(ranked.begin(), ranked.end(), [&](std::size_t a, std::size_t b) {
+            if (processes[a].priority != processes[b].priority) return processes[a].priority < processes[b].priority;
+            if (processes[a].arrivalTime != processes[b].arrivalTime) return processes[a].arrivalTime < processes[b].arrivalTime;
+            return processes[a].pid < processes[b].pid;
+        });
+        std::vector<int> ready;
+        for (std::size_t j : ranked) ready.push_back(processes[j].pid);
+        std::vector<int> remaining(n);
+        for (std::size_t j = 0; j < n; ++j) remaining[j] = done[j] ? 0 : processes[j].burstTime;
+        r.timeline.push_back({time, end, false, p.pid});
+        auto& segment = r.timeline.back();
+        segment.remainingBurst = p.burstTime;
+        segment.readyQueue = ready;
+        segment.processes = captureProcesses(processes, remaining, done, ready, p.pid);
+        r.busyTime += p.burstTime; time = end;
         completion[chosen] = time; done[chosen] = true; ++completed;
     }
-    r.elapsedTime = time; finish(r, processes, completion); return r;
+    r.elapsedTime = time; finish(r, processes, completion); recordEvents(r, processes); return r;
 }
 
 }  // namespace scheduler
