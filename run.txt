@@ -1,3 +1,15 @@
 run command : g++ -std=c++17 -Wall -Wextra -Wpedantic main.cpp scheduler/Scheduler.cpp -o cpu_scheduler.exe
 .\cpu_scheduler.exe
 in demo.ps1
+
+
+You’re right: there’s no separate “Gantt Chart” menu option. 
+The chart is shown automatically when you run a scheduling policy.
+
+From the main menu, choose [02] Temporal Simulation, then choose 
+FCFS, Round Robin, or Priority Scheduling. The timeline appears 
+during the run, and the final chart appears in the execution 
+report. You can also choose Compare policies to see each policy’s 
+timeline.
+That behavior is implemented in [ui/Menu.h (line 311)](/F:/Projects/Dsa_miniPro/ui/Menu.h:311). run.txt only contains the
+ build and launch commands, so it won’t show a menu option.
